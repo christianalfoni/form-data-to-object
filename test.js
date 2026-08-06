@@ -48,6 +48,40 @@ exports['toObj: should convert complex structures to object and arrays respectiv
     test.done();
 };
 
+exports['toObj: should not pollute the prototype through __proto__'] = function(test) {
+    test.deepEqual(toObj({'__proto__[polluted]': 'yes'}), {});
+    test.strictEqual(({}).polluted, undefined);
+    test.done();
+};
+
+exports['toObj: should not pollute the prototype through constructor'] = function(test) {
+    test.deepEqual(toObj({'constructor[prototype][polluted]': 'yes'}), {});
+    test.strictEqual(({}).polluted, undefined);
+    test.done();
+};
+
+exports['toObj: should not pollute the prototype through a nested __proto__'] = function(test) {
+    test.deepEqual(toObj({'foo[__proto__][polluted]': 'yes'}), {});
+    test.strictEqual(({}).polluted, undefined);
+    test.done();
+};
+
+exports['toObj: should not walk into inherited properties'] = function(test) {
+    test.deepEqual(toObj({'toString[polluted]': 'yes'}), {'toString': {'polluted': 'yes'}});
+    test.strictEqual(Object.prototype.toString.polluted, undefined);
+    test.done();
+};
+
+exports['toObj: should keep safe keys when an unsafe key is present'] = function(test) {
+    test.deepEqual(toObj({'foo[bar]': 'bar', '__proto__[polluted]': 'yes'}), {
+      'foo': {
+        'bar': 'bar'
+      }
+    });
+    test.strictEqual(({}).polluted, undefined);
+    test.done();
+};
+
 exports['fromObj: transform of transform should be equal to original (aka fromObj(toObj(obj)) === obj)'] = function(test) {
     var input = {
       'foo[0]': 'bar',

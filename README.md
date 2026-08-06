@@ -27,3 +27,16 @@ Converts application/x-www-form-urlencoded data structure to plain JS object
   }]
 }
 ```
+
+## Prototype safety
+`toObj` is safe to call on untrusted input. Keys containing a `__proto__`,
+`constructor` or `prototype` segment are dropped rather than written, so form
+data can never reach `Object.prototype`. Other keys in the same input are
+converted as usual.
+
+```js
+formData.toObj({'__proto__[polluted]': 'yes', 'foo': 'bar'}); // {foo: 'bar'}
+```
+
+Versions up to and including 0.2.0 are vulnerable to prototype pollution
+through such keys (CWE-1321) and should not be used to parse untrusted data.

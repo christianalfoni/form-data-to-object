@@ -1,3 +1,13 @@
+var UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+function isUnsafeKey(key) {
+  return UNSAFE_KEYS.indexOf(key) !== -1;
+}
+
+function hasOwn(obj, key) {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
 function toObj(source) {
   return Object.keys(source).reduce(function (output, key) {
     var parentKey = key.match(/[^\[]*/i);
@@ -5,11 +15,18 @@ function toObj(source) {
     paths = [parentKey[0]].concat(paths).map(function (key) {
       return key.replace(/\[|\]/g, '');
     });
+
+    // Keys pointing at the prototype chain are dropped, so that hostile input
+    // cannot reach Object.prototype through this function.
+    if (paths.some(isUnsafeKey)) {
+      return output;
+    }
+
     var currentPath = output;
     while (paths.length) {
       var pathKey = paths.shift();
 
-      if (pathKey in currentPath) {
+      if (hasOwn(currentPath, pathKey)) {
         currentPath = currentPath[pathKey];
       } else {
         currentPath[pathKey] = paths.length ? isNaN(paths[0]) ? {} : [] : source[key];
